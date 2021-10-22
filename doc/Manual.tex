@@ -1,0 +1,229 @@
+\documentclass[12pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{graphicx}
+\usepackage[hidelinks]{hyperref}
+\usepackage{float}
+\usepackage{tcolorbox}
+
+\newcommand{\executable}[1]{{\fontfamily{pcr}\selectfont\textbf{#1}}}
+\newcommand{\parameters}[1]{{\fontfamily{pcr}\selectfont#1}}
+
+\newcommand{\hrefc}[2]{\href{#1}{\color{blue}#2}}
+
+\setlength\parindent{0pt}
+
+\graphicspath{ {./images/} }
+
+\makeindex
+
+\title{ClC\_MKM v0.1 Manual}
+\author{Austen Bernardi}
+\date{\today}
+
+\begin{document}
+\maketitle{}
+
+\tableofcontents
+\clearpage
+\newpage
+
+\section{Introduction}
+
+ClC\_MKM contains Python libraries and executables for steady-state kinetic modeling and optimization a ClC-ec1 Markov State Model. ClC-ec1 is a secondary-active Chloride/Proton transmembrane antiporter \cite{mayes2018multiscale}. ClC\_MKM supports optimization of kinetic rate coefficients between biologically relevant transitions against experimentally derived unitary turnover rates \cite{lim2009intracellular}. This manual describes how to use ClC\_MKM to perform optimization.
+
+\section{Requirements}
+ClC\_MKM depends on the following requirements:
+
+\begin{itemize}
+\item Python3 (python3)
+\item SciPy (python package)
+\item SpotPy (python package)
+\item NumPy (python package)
+\end{itemize}
+
+\section{Installation}
+Download the top directory \parameters{ClC\_MKM} to a directory that will store the module. Update your \parameters{\$PYTHONPATH} enviornoment variable to include the storage directory if it is not already included. Update your \parameters{\$PATH} environment variable to include \parameters{ClC\_MKM/bin}.
+
+\clearpage
+\section{Executables}
+\label{sec:exec}
+
+This section describes the executables provided in \parameters{ClC\_MKM/bin}.
+
+\subsection{\executable{run\_opt.py}}
+\executable{run\_opt.py }\parameters{<config>}\\[0.2cm]
+\textbf{Parameters}\\
+\parameters{<config>}: A configuration file containing parameters for the ClC-ec1 system.  Also specifies the optimization configuration file.  The format of this configuration file is specified in section \ref{sec:config}. \\[0.2cm]
+\textbf{Description}\\
+Performs optimization on the ClC-ec1 system specified by \parameters{<config>}. See section \ref{sec:examp} for a usage example.\\[0.2cm]
+
+\subsection{\executable{run\_mkm.py}}
+\executable{run\_mkm.py }\parameters{<config>}\\[0.2cm]
+\textbf{Parameters}\\
+\parameters{<config>}: A configuration file containing parameters for the ClC-ec1 system.  The format of this configuration file is specified in section \ref{sec:config}. \\[0.2cm]
+\textbf{Description}\\
+Generates an instance of the ClC-ec1 system specified by \parameters{<config>}. See section \ref{sec:examp} for a usage example.\\[0.2cm]
+
+\section{Configuration files}
+\label{sec:config}
+This section describes the various configuration files used by ClC\_MKM.  Representative example configuration files are provided in the \parameters{ClC\_MKM/examples} directory, and discussed in section \ref{sec:examp}.  The parameter specification format for all configuration files is \parameters{param = <param\_list>}, where \parameters{<param\_list>} is a comma-seperated (without spaces) list of values, ex. \parameters{<val1,val2,val3,...>}.  Space seperated text after \parameters{<param\_list>} is ignored and can be used as comments (ex. units).  If any \parameters{<param\_list>} has length greater than one, all other \parameters{<param\_list>} must have the same length or length one.  If a \parameters{<param\_list>} is length one and another \parameters{<param\_list>} has length greater than one, then the value is used for all systems. In some cases, \parameters{<param\_list>} must be length one, indicated by \parameters{scalar}. A listed \parameters{param} is considered to be required unless specified as \parameters{optional}.  
+
+\subsection{Systems configuration file}
+This is the main configuration file that is used as the argument for both executables listed in section \ref{sec:exec}.  See below for the full list of accepted parameters.\\
+
+\executable{input\_rate\_file} \parameters{(scalar)}
+
+The input rate coefficient filename for the kinetic model.  See examples \ref{} for formatting. Units of 1/ms.\\
+
+\executable{input\_rate\_file} \parameters{(scalar)}
+
+The rate coefficient map filename for the kinetic model.  Used to map coefficients to applicable transitions.  See examples \ref{} for formatting.\\
+
+\executable{internal\_pH}
+
+The pH(s) inside the vesicles of the modeled systems.\\
+
+\executable{external\_pH}
+
+The pH(s) outside the vesicles of the modeled systems.\\
+
+\executable{internal\_Cl\_conc}
+
+The chloride concentration(s) in mol/m$^3$ inside the vesicles.\\
+
+\executable{external\_Cl\_conc}
+
+The chloride concentration(s) in mol/m$^3$ outside the vesicles.\\
+
+\executable{enzyme\_MW}
+
+The molecular weight of the antiporter in g/mol.\\
+
+\executable{lipid\_MW}
+
+The molecular weight of the lipids that make up the vesicles in g/mol.\\
+
+\executable{area\_per\_lipid}
+
+The average surface area per lipid in m$^2$ of the lipids that make up the vesicles.\\
+
+\executable{enzyme\_lipid\_wtfrac}
+
+The weight fraction of enymes to lipids of the vesicles.\\
+
+\executable{h\_rxn\_bl}
+
+The approximate height of the reactive boundary layer for vesicle surface uptake reactions.\\
+
+\executable{diffusivity\_Cl}
+
+The bulk diffusivity of Chlorides.\\
+
+\executable{diffusivity\_H}
+
+The bulk diffusivity in m$^2$/ms of protons.\\
+
+\executable{vesicle\_diam}
+
+The average diameter in m of the vesicles.\\
+
+\executable{enzyme\_surf\_conc\_sim}
+
+The surface concentration of enzymes in mol/m$^2$ for the simulations used to model the uptake coefficients.\\
+
+\executable{opt\_config\_file} \parameters{(scalar)}
+
+Required only for \executable{run\_opt.py}. The filename of the optimization configuration file. See section \ref{sec:opt_config} for details.\\
+
+\subsection{Optimization configuration file}
+\label{sec:opt_config}
+This configuration file is specified by the main configuration file as \parameters{opt\_config\_file}. For use with \executable{run\_opt.py}.  See below for the full list of accepted parameters.\\
+
+\executable{opt\_package} \parameters{(optional, scalar)}
+
+The name of the optimization package to use.  A custom combined steepest descent/conjugate gradient method is used if unspecified.  Supported packages are "scipy" and "spotpy". See examples \ref{} for example use cases.\\
+
+\executable{opt\_residuals\_file} \parameters{(scalar)}
+
+The optimization residuals filename.  This file contains residual targets for specified flows, and is used to build the objective function using a sum of square residual differences. See section \ref{sec:res_config} for details.\\
+
+\executable{n\_steps} \parameters{(scalar)}
+
+The number of steps for optimization (outermost level).\\
+
+\executable{output\_interval} \parameters{(scalar)}
+
+The interval between consecutive output records. A value of 1 records every step, a value of 2 records every other step, etc.\\
+
+\executable{local\_method} \parameters{(scalar)}
+
+Only used when \parameters{opt\_package} is "scipy". The local optimization method. Accepted values are listed under the "method" parameter of the \hrefc{https://docs.scipy.org/doc/scipy/reference/reference/generated/scipy.optimize.minimize.html}{\parameters{scipy.optimize.minimize}} documentation.\\
+
+\executable{local\_options\_file} \parameters{(optional, scalar)}
+
+Only used when \parameters{opt\_package} is "scipy". The local optimization options configuration filename. Format is consistent with the generic configuration file format specified in section \ref{sec:config}.  Only supports scalar parameters. Accepted values are listed are consistent with the arguments listed under the specific SciPy \hrefc{https://docs.scipy.org/doc/scipy/reference/reference/optimize.html\#local-multivariate-optimization}{local method}  documentation, with exception to the arguments \parameters{maxiter} and \parameters{bounds}, which are automatically specified by ClC\_MKM. See examples \ref{} for an example use case.\\
+
+\executable{global\_method} \parameters{(optional,scalar)}
+
+Only used when \parameters{opt\_package} is "scipy". The global optimization method. Accepted values are listed under the \hrefc{https://docs.scipy.org/doc/scipy/reference/reference/optimize.html\#global-optimization}{Global Optimization} section of SciPy's optimize documentation. Method "brute" is not supported.\\
+
+\executable{global\_options\_file} \parameters{(optional, scalar)}
+
+Only used when \parameters{opt\_package} is "scipy". The global optimization options configuration filename. Format is consistent with the generic configuration file format specified in section \ref{sec:config}.  Only supports scalar parameters. Accepted values are listed are consistent with the arguments listed under the specific SciPy \hrefc{https://docs.scipy.org/doc/scipy/reference/reference/optimize.html\#global-optimization}{global method}  documentation, with exception to the arguments \parameters{niter/maxiter} and \parameters{bounds}, which are automatically specified by ClC\_MKM. See examples \ref{} for an example use case.\\
+
+\executable{algorithm} \parameters{(scalar)}
+
+Only used when \parameters{opt\_package} is "spotpy".  Specifies the algorithm used for SpotPy optimization.  See SpotPy's \hrefc{https://spotpy.readthedocs.io/en/latest/Algorithm_guide/}{Algorithm Guide} for a list of accepted values (lowercase abbreviations).\\
+
+\executable{limp} \parameters{(scalar)}
+
+Only used when \parameters{opt\_package} is not specified.  Specifies the target lower bound for improvement in the objective for a single step.\\
+
+\executable{uimp} \parameters{(scalar)}
+
+Only used when \parameters{opt\_package} is not specified.  Specifies the target upper bound for improvement in the objective for a single step.\\
+
+\executable{max\_limp\_steps} \parameters{(scalar)}
+
+Only used when \parameters{opt\_package} is not specified.  Specifies the maximum number of steps in which the improvement is below \parameters{limp} before switching from steepest descent to conjugate gradient.\\
+
+\subsection{Residual configuration file}
+\label{sec:res_config}
+
+The residual configuration file details ion flow targets for optimization, which are combined using sum of squared residual differences.  Accepted parameters are listed below.  Note the length of \parameters{<param\_list>} must be consistent with the number of systems specified in the main configuration file, following the \parameters{<param\_list>} rules specified in section \ref{sec:config}. If a value is specified as \parameters{NaN}, then the corrosponding residual flow is ommitted from the objective function calculation.\\
+
+\executable{net\_Cl\_flow} \parameters{(optional)}
+
+The net chloride flow(s) directed from external to internal in ions/ms per enzyme.\\
+
+\executable{net\_H\_flow} \parameters{(optional)}
+
+The net proton flow(s) directed from external to internal in ions/ms per enzyme.\\
+
+\executable{bio\_Cl\_flow} \parameters{(optional)}
+
+The chloride flow(s) directed from external to internal in ions/ms per enzyme for biologically oriented enzymes.\\
+
+\executable{bio\_H\_flow} \parameters{(optional)}
+
+The proton flow(s) directed from external to internal in ions/ms per enzyme for biologically oriented enzymes.\\
+
+\executable{opp\_Cl\_flow} \parameters{(optional)}
+
+The chloride flow(s) directed from external to internal in ions/ms per enzyme for oppositely oriented enzymes.\\
+
+\executable{opp\_H\_flow} \parameters{(optional)}
+
+The proton flow(s) directed from external to internal in ions/ms per enzyme for oppositely oriented enzymes.\\
+
+\section{Examples}
+See \parameters{ClC\_MKM/examples} for some usage examples.
+
+\section{References}
+\begingroup
+\renewcommand{\section}[2]{}
+\bibliographystyle{plain}
+\bibliography{the_bibliography.bib}
+\endgroup
+\end{document}
