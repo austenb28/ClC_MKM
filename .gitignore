@@ -1,7 +1,4 @@
 __pycache__/
-coeff_trajs.dat
-config.txt
-config_test.txt
 doc/Manual.aux
 doc/Manual.bbl
 doc/Manual.blg
@@ -10,19 +7,4 @@ doc/Manual.log
 doc/Manual.out
 doc/Manual.toc
 doc/compile.sh
-dru_opt2.ini
-global_options.txt
-gnup.gp
-local_options.txt
-opt.dat
-opt_config_custom.txt
-opt_config_scipy.txt
-opt_config_spotpy.txt
-opt_residuals.txt
-opt_summary.txt
-out_coeffs.csv
-out_coeffs1E4.csv
-output.dat
-san_opt2.csv
-seed_dru_san.csv
 src/__pycache__/
