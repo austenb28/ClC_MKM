@@ -154,7 +154,7 @@ def read_config(filename,gen_config_args=None,n_sys=None):
 			))
 		fields = re.split(',',line[1])
 		if gen_config_args is None:
-			properties = get_generic_properties(fields[0])
+			properties = get_generic_properties(line[0])
 		else:
 			properties = config_args[line[0]]
 		if len(fields) < n_sys:

@@ -56,7 +56,7 @@ class SciPy_opt():
 		return self.opt_parent.gradient
 
 	# Used to update coefficient and objective data for output
-	def callback(self,xk):
+	def callback(self,xk,fun_val=0,status=True):
 		if self.count % self.opt_parent.output_interval == 0:
 			self.opt_parent.opt_dat[self.opt_parent.out_count,0] = self.count
 			self.opt_parent.opt_dat[self.opt_parent.out_count,1:-1] = xk
@@ -85,7 +85,7 @@ class SciPy_opt():
 			if self.global_method == 'basinhopping':
 				basinbounds = BasinBounds(self.bounds)
 				kwargs['accept_test'] = basinbounds
-				kwargs['niter'] = self.opt_parent.n_steps + 1
+				kwargs['niter'] = self.opt_parent.n_steps - 1
 			else:
 				kwargs['bounds'] = self.bounds
 			if (self.global_method == 'shgo'):
@@ -108,6 +108,8 @@ class SciPy_opt():
 				kwargs[local_str]['method'] = self.local_method
 				kwargs[local_str]['jac'] = self.jac
 				kwargs[local_str]['options'] = self.local_options
+				# print(kwargs[local_str])
+				# quit()
 			self.res = opt_fun(**kwargs)
 		print(self.res)
 
@@ -120,4 +122,5 @@ class BasinBounds:
 		x = kwargs['x_new']
 		tmin = np.all(x >= self.bounds.lb)
 		tmax = np.all(x <= self.bounds.ub)
+		print ('Bound check:', tmax and tmin)
 		return tmax and tmin

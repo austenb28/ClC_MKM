@@ -5,15 +5,17 @@
 \usepackage[hidelinks]{hyperref}
 \usepackage{float}
 \usepackage{tcolorbox}
+\usepackage[margin=1.25in]{geometry}
 
 \newcommand{\executable}[1]{{\fontfamily{pcr}\selectfont\textbf{#1}}}
 \newcommand{\parameters}[1]{{\fontfamily{pcr}\selectfont#1}}
 
 \newcommand{\hrefc}[2]{\href{#1}{\color{blue}#2}}
 
+% \setlength{\textwidth}{6.25in}
 \setlength\parindent{0pt}
 
-\graphicspath{ {./images/} }
+% \graphicspath{ {./images/} }
 
 \makeindex
 
@@ -148,6 +150,10 @@ The name of the optimization package to use.  A custom combined steepest descent
 
 The optimization residuals filename.  This file contains residual targets for specified flows, and is used to build the objective function using a sum of square residual differences. See section \ref{sec:res_config} for details.\\
 
+\executable{opt\_dat\_file} \parameters{(optional,scalar)}
+
+Filename for the output optimization data (step, parameters, objective). Default value is \parameters{"opt.dat"}.\\
+
 \executable{n\_steps} \parameters{(scalar)}
 
 The number of steps for optimization (outermost level).\\
@@ -218,7 +224,7 @@ The chloride flow(s) directed from external to internal in ions/ms per enzyme fo
 The proton flow(s) directed from external to internal in ions/ms per enzyme for oppositely oriented enzymes.\\
 
 \section{Examples}
-See \parameters{ClC\_MKM/examples} for some usage examples.
+See \parameters{ClC\_MKM/examples} for some usage examples.  \parameters{ClC\_MKM/examples/mkm} provides a single instance of the ClC-ec1 kinetic system to be executed with \parameters{"run\_mkm.py config.txt"}. All other examples are designed to be executed within their respective directories with \parameters{"run\_opt.py config.txt"}.
 
 \section{References}
 \begingroup
