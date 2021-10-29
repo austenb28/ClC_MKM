@@ -1,0 +1,6 @@
+opt_package = scipy
+local_method = Nelder-Mead
+opt_residuals_file = opt_residuals.txt
+local_options_file = local_options.txt
+output_interval = 1
+n_steps = 10

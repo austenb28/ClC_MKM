@@ -1,0 +1,6 @@
+opt_residuals_file = opt_residuals.txt
+output_interval = 1
+n_steps = 10
+limp = 0.01
+uimp = 0.05
+max_limp_steps = 15

@@ -1,0 +1,8 @@
+opt_package = scipy
+global_method = basinhopping
+local_method = TNC
+opt_residuals_file = opt_residuals.txt
+global_options_file = global_options.txt
+local_options_file = local_options.txt
+output_interval = 1
+n_steps = 2

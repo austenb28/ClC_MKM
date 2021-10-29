@@ -1,0 +1,16 @@
+input_rate_file = seed_dru_san.csv
+rate_map_file = san_opt2.csv
+internal_pH = 4.5,4.5
+external_pH = 4.5,4.5
+internal_Cl_conc = 1,300 mol/m^3
+external_Cl_conc = 300,300 mol/m^3
+enzyme_MW = 503600 g/mol
+lipid_MW = 730 g/mol
+area_per_lipid = 6.15E-19 m^2
+enzyme_lipid_wtfrac = 5E-5
+h_rxn_bl = 1E-9 m
+diffusivity_Cl = 2E-12 m^2/ms
+diffusivity_H = 9.3E-12 m^2/ms
+vesicle_diam = 5E-8 m
+enzyme_surf_conc_sim = 3.32E-8 mol/m^2
+opt_config_file = opt_config_custom.txt
