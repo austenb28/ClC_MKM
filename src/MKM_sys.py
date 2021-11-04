@@ -11,6 +11,8 @@ class MKM_sys():
 		self.flow_transitions = self.gen_flow_transitions()
 		self.h_rxn_bl = config['h_rxn_bl']
 		self.concs = self.get_concs(config)
+		self.lbounds = []
+		self.ubounds = []
 		self.coeffs_dict = self.get_coeffs_dict(config)
 		self.init_coeffs = np.array(
 			self.dict_to_list(self.coeffs_dict))
@@ -540,6 +542,7 @@ class MKM_sys():
 	# Produces dictionary rate_coeffs with format
 	# rate_coeffs[identifier] = rate_coefficient.
 	# Units are 1/ms for first order and 1/ms/mM for second order
+	# Also sets self.lbounds and self.ubounds
 	def get_coeffs_dict(self,config):
 		with open(config['input_rate_file'],'r') as myfile:
 			buff = myfile.readlines()
@@ -548,8 +551,16 @@ class MKM_sys():
 			line = re.split('[, \t"\n]+', ' ' + line + ' ')
 			lines.append(line[1:-1])
 		coeffs_dict = dict()
-		for j, identfier in enumerate(lines[0]):
-			coeffs_dict[identfier] = float(lines[1][j])
+		N = len(lines[0])
+		for j, identifier in enumerate(lines[0]):
+			coeffs_dict[identifier] = float(lines[1][j])
+		self.lbounds = np.zeros(N)
+		self.ubounds = np.full(N,float('inf'))
+		if(len(lines)>3):
+			for j in range(N):
+				self.lbounds[j] = (float(lines[2][j]))
+			for j in range(N):
+				self.ubounds[j] = (float(lines[3][j]))
 		return coeffs_dict
 
 	# Produces internal and external concentrations with format

@@ -56,9 +56,9 @@ This section describes the executables provided in \parameters{ClC\_MKM/bin}.
 \subsection{\executable{run\_opt.py}}
 \executable{run\_opt.py }\parameters{<config>}\\[0.2cm]
 \textbf{Parameters}\\
-\parameters{<config>}: A configuration file containing parameters for the ClC-ec1 system.  Also specifies the optimization configuration file.  The format of this configuration file is specified in section \ref{sec:config}. \\[0.2cm]
+\parameters{<config>}: A configuration file containing parameters for the ClC-ec1 system.  Also specifies the optimization configuration file.  The format of this configuration file is specified in section \ref{sec:sys_config}. \\[0.2cm]
 \textbf{Description}\\
-Performs optimization on the ClC-ec1 system specified by \parameters{<config>}. See section \ref{sec:examp} for a usage example.\\[0.2cm]
+Performs optimization on the ClC-ec1 system specified by \parameters{<config>}. See section \ref{sec:examp} for a usage examples.\\[0.2cm]
 
 \subsection{\executable{run\_mkm.py}}
 \executable{run\_mkm.py }\parameters{<config>}\\[0.2cm]
@@ -72,15 +72,16 @@ Generates an instance of the ClC-ec1 system specified by \parameters{<config>}. 
 This section describes the various configuration files used by ClC\_MKM.  Representative example configuration files are provided in the \parameters{ClC\_MKM/examples} directory, and discussed in section \ref{sec:examp}.  Lines may be commented using the '\#' symbol. The parameter specification format for all configuration files is \parameters{param = <param\_list>}, where \parameters{<param\_list>} is a comma-seperated (without spaces) list of values, ex. \parameters{<val1,val2,val3,...>}.  Space seperated text after \parameters{<param\_list>} is ignored and can be used as comments (ex. units).  If any \parameters{<param\_list>} has length greater than one, all other \parameters{<param\_list>} must have the same length or length one.  If a \parameters{<param\_list>} is length one and another \parameters{<param\_list>} has length greater than one, then the value is used for all systems. In some cases, \parameters{<param\_list>} must be length one, indicated by \parameters{scalar}. A listed \parameters{param} is considered to be required unless specified as \parameters{optional}.  
 
 \subsection{Systems configuration file}
+\label{sec:sys_config}
 This is the main configuration file that is used as the argument for both executables listed in section \ref{sec:exec}.  See below for the full list of accepted parameters.\\
 
 \executable{input\_rate\_file} \parameters{(scalar)}
 
-The input rate coefficient filename for the kinetic model.  See examples \ref{} for formatting. Units of 1/ms.\\
+The input rate coefficient filename for the kinetic model. File should be comma-seperated.  Line 1: parameter identifiers. Line 2: parameter values. Line 3: lower bounds for optimization. Line 4: upper bounds for optimization.  If lines 3 and 4 are not present, lower and upper bounds are uniformly set to zero and infinity, respectively.  See \parameters{ClC\_MKM/examples/opt/seed\_dru\_san.csv} for an example with bounds specified. Units are 1/ms.\\
 
-\executable{input\_rate\_file} \parameters{(scalar)}
+\executable{rate\_map\_file} \parameters{(scalar)}
 
-The rate coefficient map filename for the kinetic model.  Used to map coefficients to applicable transitions.  See examples \ref{} for formatting.\\
+The rate coefficient map filename for the kinetic model.  Used to map coefficients to applicable transitions.  See examples for formatting.\\
 
 \executable{internal\_pH}
 
@@ -224,6 +225,7 @@ The chloride flow(s) directed from external to internal in ions/ms per enzyme fo
 The proton flow(s) directed from external to internal in ions/ms per enzyme for oppositely oriented enzymes.\\
 
 \section{Examples}
+\label{sec:examp}
 See \parameters{ClC\_MKM/examples} for some usage examples.  \parameters{ClC\_MKM/examples/mkm} provides a single instance of the ClC-ec1 kinetic system to be executed with \parameters{"run\_mkm.py config.txt"}. All other examples are designed to be executed within their respective directories with \parameters{"run\_opt.py config.txt"}.
 
 \section{References}

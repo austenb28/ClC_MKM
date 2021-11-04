@@ -25,9 +25,8 @@ class Optimizer():
 		self.gradient = np.copy(self.coeffs)
 		self.N_coeffs = len(self.coeffs)
 		self.coeff_deltas = np.copy(self.coeffs)
-		self.lbounds = np.zeros(self.N_coeffs)
-		# self.ubounds = np.full(self.N_coeffs,float('inf'))
-		self.ubounds = self.coeffs*10
+		self.lbounds = self.objective_handler.mkm_systems[0].lbounds
+		self.ubounds = self.objective_handler.mkm_systems[0].ubounds
 		self.min_delta = 1E-6
 		self.sub_opt = self.init_sub_opt()
 		self.output_interval = self.opt_config['output_interval']
