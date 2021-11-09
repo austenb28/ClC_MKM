@@ -1,5 +1,14 @@
 import re
 
+# Converts string in_str to typed in_type
+def str_to_typed(in_str,in_type):
+	if in_type == bool:
+		if in_str == 'True' or in_str == 'true':
+			return True
+		return False
+	return in_type(in_str)
+
+
 # Produces dictionary config_args with format
 # config_args[identifier] = (Required, type).
 # config_args contains recognized parameters for
@@ -67,6 +76,7 @@ def gen_config_args_RES():
 	config_args['bio_H_flow'] = (False,float)
 	config_args['opp_Cl_flow'] = (False, float)
 	config_args['opp_H_flow'] = (False, float)
+	config_args['no_flow_sys'] = (False,bool)
 	n_required = 0
 	for arg,properties in config_args.items():
 		if properties[0]:
@@ -114,7 +124,8 @@ def read_config_RES(filename,n_sys):
 	return read_config(filename,gen_config_args_RES,n_sys)
 
 def get_generic_properties(field):
-	if field == 'True' or field == 'False':
+	if (field == 'True' or field == 'False' or 
+		field == 'true' or field == 'false'):
 		return(False,bool)
 	int_fields = {'disp','maxiter','maxfev','maxcor',
 	'maxfun','iprint','maxls','maxCGit','niter',
@@ -160,7 +171,7 @@ def read_config(filename,gen_config_args=None,n_sys=None):
 		if len(fields) < n_sys:
 			fields = fields*n_sys
 		for j in range(n_sys):
-			configs[j][line[0]] = properties[1](fields[j])
+			configs[j][line[0]] = str_to_typed(fields[j],properties[1])
 		if properties[0]:
 			n_required -= 1
 	if n_required > 0:

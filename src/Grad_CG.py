@@ -205,6 +205,7 @@ class Grad_CG():
 				newt_iter += 1
 		lower_violated_indices = np.argwhere(
 			self.coeffs < self.lbounds)
+		self.improvement = I_0
 		if(len(lower_violated_indices) > 0):
 			min_alpha = float('inf')
 			for js in lower_violated_indices:
@@ -219,18 +220,16 @@ class Grad_CG():
 			self.alpha = min_alpha
 			self.improvement = self.step_alpha()
 			self.coeffs[min_index] = self.lbounds[min_index]
-			self.limp_steps = 0
+			# self.limp_steps = 0
 			# print("Constraining coefficient {:d}".format(j))
 			# quit()
+		if self.is_steepest and self.improvement < self.limp:
+			self.limp_steps += 1
+			if self.limp_steps > self.max_limp_steps:
+				self.is_steepest = False
+				print('Switching to conjugate gradient after step',self.step_num)
 		else:
-			self.improvement = I_0
-			if self.is_steepest and I_0 < self.limp:
-				self.limp_steps += 1
-				if self.limp_steps > self.max_limp_steps:
-					self.is_steepest = False
-					print('Switching to conjugate gradient after step',self.step_num)
-			else:
-				self.limp_steps = 0
+			self.limp_steps = 0
 
 		# if self.step_num == self.debug_num:
 		# 	quit()

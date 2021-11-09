@@ -18,8 +18,44 @@ class Objective_handler():
 			self.mkm_systems.append(MKM_sys(mkm_configs[j]))
 			self.mkm_systems[-1].coeffs = self.coeffs
 			self.ion_flows.append(self.mkm_systems[-1].ion_flows)
+		self.init_no_flow_residual()
 		self.flow_alias_dict = self.gen_flow_alias_dict()
 		# self.sq_residuals = self.gen_sq_residuals()
+
+	# Initializes flow indicies used for the 
+	# method self.no_flow_sqresidual
+	def init_no_flow_residual(self):
+		if not hasattr(self,'no_flow_sys'):
+			return
+		mkm_sys = self.mkm_systems[0]
+		forward_adj = [[] for j in range(mkm_sys.N_coeffs)]
+		for trans_set in mkm_sys.transitions:
+			for transition in trans_set:
+				if transition[1] < transition[0]:
+					forward_adj[transition[1]].append(transition[0])
+		forward_trans = []
+		for j in range(mkm_sys.N_coeffs):
+			N = len(forward_adj[j]) - 1
+			for k in range(N):
+				forward_trans.append((forward_adj[j][k],j))
+		self.forward_inds = np.asarray(forward_trans)
+		self.reverse_inds = np.copy(self.forward_inds)
+		self.reverse_inds[:,0] = self.forward_inds[:,1]
+		self.reverse_inds[:,1] = self.forward_inds[:,0]
+
+	# Returns the summed square residual for the no flow sytems,
+	# which uses the minimum number of independent flow 
+	# constraints to establish microscopic reversability
+	def no_flow_sqresidual(self):
+		sq_res = 0
+		for j in self.no_flow_sys:
+			for k in range(self.mkm_systems[j].N_orient):
+				flow_mat = self.mkm_systems[j].flow_mats[k]
+				vals = np.take(flow_mat,self.forward_inds)
+				vals -= np.take(flow_mat,self.reverse_inds)
+				sq_res += np.sum(vals*vals)
+		return sq_res
+
 
 	# Returns the square residual for residual_parameter k, system j
 	def get_sq_residual(self,j,k):
@@ -52,11 +88,19 @@ class Objective_handler():
 		self.res_configs = conf.read_config_RES(
 			filename,self.n_sys)
 		for key in self.res_configs[0]:
-			vec = np.zeros((self.n_sys))
-			for j in range(self.n_sys):
-				vec[j] = self.res_configs[j][key]
-			setattr(self,key,vec)
-			residual_params.append(key)
+			if key != 'no_flow_sys':
+				vec = np.zeros((self.n_sys))
+				for j in range(self.n_sys):
+					vec[j] = self.res_configs[j][key]
+				setattr(self,key,vec)
+				residual_params.append(key)
+			else:
+				vec = []
+				for j in range(self.n_sys):
+					if self.res_configs[j][key]:
+						vec.append(j)
+				if len(vec) > 0:
+					setattr(self,key,vec)
 		return residual_params
 
 	# Returns the objective using the specified flow
@@ -72,4 +116,6 @@ class Objective_handler():
 				sq_residual = self.get_sq_residual(j,k)
 				if not math.isnan(sq_residual):
 					objective += sq_residual
+		if hasattr(self,'no_flow_sys'):
+			objective += self.no_flow_sqresidual()
 		return objective

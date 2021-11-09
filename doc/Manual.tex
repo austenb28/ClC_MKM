@@ -34,6 +34,9 @@
 
 ClC\_MKM contains Python libraries and executables for steady-state kinetic modeling and optimization a ClC-ec1 Markov State Model. ClC-ec1 is a secondary-active Chloride/Proton transmembrane antiporter \cite{mayes2018multiscale}. ClC\_MKM supports optimization of kinetic rate coefficients between biologically relevant transitions against experimentally derived unitary turnover rates \cite{lim2009intracellular}. This manual describes how to use ClC\_MKM to perform optimization.
 
+\section{License}
+ClC\_MKM uses the GNU General Public License v3.  See \parameters{ClC\_MKM/LICENSE} for more information.
+
 \section{Requirements}
 ClC\_MKM depends on the following requirements:
 
@@ -45,7 +48,13 @@ ClC\_MKM depends on the following requirements:
 \end{itemize}
 
 \section{Installation}
-Download the top directory \parameters{ClC\_MKM} to a directory that will store the module. Update your \parameters{\$PYTHONPATH} enviornoment variable to include the storage directory if it is not already included. Update your \parameters{\$PATH} environment variable to include \parameters{ClC\_MKM/bin}.
+Download the top directory \parameters{ClC\_MKM} to a directory that will store the module. Update your \parameters{\$PYTHONPATH} environment variable to include the storage directory if it is not already included. Update your \parameters{\$PATH} environment variable to include \parameters{ClC\_MKM/bin}. For example, on a Unix based system, if the storage directory is \parameters{\$HOME/modules}, then adding \\
+
+\parameters{export PYTHONPATH=\$PYTHONPATH:"\$HOME/modules"}
+
+\parameters{export PATH=\$PATH:"\$HOME/modules/ClC\_MKM/bin"}\\
+
+to \parameters{\$HOME/.bashrc} properly installs ClC\_MKM.
 
 \clearpage
 \section{Executables}
@@ -77,7 +86,7 @@ This is the main configuration file that is used as the argument for both execut
 
 \executable{input\_rate\_file} \parameters{(scalar)}
 
-The input rate coefficient filename for the kinetic model. File should be comma-seperated.  Line 1: parameter identifiers. Line 2: parameter values. Line 3: lower bounds for optimization. Line 4: upper bounds for optimization.  If lines 3 and 4 are not present, lower and upper bounds are uniformly set to zero and infinity, respectively.  See \parameters{ClC\_MKM/examples/opt/seed\_dru\_san.csv} for an example with bounds specified. Units are 1/ms.\\
+The input rate coefficient filename for the kinetic model. File should be comma-seperated.  Line 1: parameter identifiers. Line 2: parameter values. Line 3: lower bounds for optimization. Line 4: upper bounds for optimization.  If lines 3 and 4 are not present, lower and upper bounds are uniformly set to zero and infinity, respectively.  See \parameters{ClC\_MKM/examples/opt/custom/seed\_dru\_san.csv} for an example with bounds specified. Units are 1/ms.\\
 
 \executable{rate\_map\_file} \parameters{(scalar)}
 
@@ -223,6 +232,10 @@ The chloride flow(s) directed from external to internal in ions/ms per enzyme fo
 \executable{opp\_H\_flow} \parameters{(optional)}
 
 The proton flow(s) directed from external to internal in ions/ms per enzyme for oppositely oriented enzymes.\\
+
+\executable{no\_flow\_sys} \parameters{(optional)}
+
+Special boolean residual parameter ("True" or "False"). Designates a system to have no flow anywhere (microscopic reversibility), generally for use with zero gradient boundary conditions. See \parameters{ClC\_MKM/examples/opt/custom/opt\_residuals.txt} for a usage example.\\
 
 \section{Examples}
 \label{sec:examp}
