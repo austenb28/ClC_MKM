@@ -1,4 +1,5 @@
-bio_Cl_flow = 2.337,0
-bio_H_flow = -1.06,0
-opp_Cl_flow = 0
-opp_H_flow = 0
+bio_Cl_flow = 2.337,nan
+bio_H_flow = -1.06,nan
+opp_Cl_flow = 0,nan
+opp_H_flow = 0,nan
+no_flow_sys = False,True

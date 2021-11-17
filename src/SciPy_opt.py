@@ -53,6 +53,7 @@ class SciPy_opt():
 		np.copyto(self.coeffs,self.opt_parent.prev_coeffs)
 		self.opt_parent.update_objective()
 		self.opt_parent.update_gradient()
+		self.opt_parent.prev_objective = self.opt_parent.objective
 		return self.opt_parent.gradient
 
 	# Used to update coefficient and objective data for output

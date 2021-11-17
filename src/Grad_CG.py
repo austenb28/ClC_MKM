@@ -7,6 +7,8 @@ class Grad_CG():
 	def __init__(self,opt_parent):
 		self.opt_parent = opt_parent
 		self.objective_handler = opt_parent.objective_handler
+		self.min_delta_prec = opt_parent.min_delta_prec
+		self.max_delta_prec = opt_parent.max_delta_prec
 		self.debug_num = 0
 		self.step_num = 0
 		self.N_coeffs = opt_parent.N_coeffs
@@ -30,7 +32,8 @@ class Grad_CG():
 		self.prev_coeffs = opt_parent.prev_coeffs
 		self.coeff_deltas = opt_parent.coeff_deltas
 		self.lbounds = np.copy(opt_parent.lbounds)
-		self.dalphas = np.zeros(self.N_coeffs)
+		self.dalpha = (opt_parent.min_delta_prec + 
+			opt_parent.max_delta_prec)/2
 
 	#Initializes class variables from opt_config
 	def init_opt_params(self,opt_config):
@@ -85,16 +88,7 @@ class Grad_CG():
 
 	# Used to analyze improvement vs alpha for debugging
 	def debug_plot(self):
-		xs = np.copy(self.dalphas)
-		for j in range(self.N_coeffs):
-			xs[j] = j
-		plt.plot(xs,self.dalphas)
-		plt.yscale('log')
-		plt.ylabel('dalpha')
-		plt.xlabel('index')
-		plt.savefig('dalphas.png')
-		plt.figure()
-		N = 200
+		N = 140
 		minexp = -15
 		factor=0.067
 		alphas = np.zeros(N)
@@ -132,19 +126,52 @@ class Grad_CG():
 	# Performs a linesearch along self.descent_vec to select
 	# stepsize self.alpha using the target improvment range
 	# [limp,uimp]
+	# TODO: potentially improve dalpha determination
 	def search_alpha(self):
-		self.dalphas[:] = 0
-		np.divide(self.coeff_deltas,np.abs(self.descent_vec),
-			where=(self.descent_vec != 0),
-			out=self.dalphas)
-		self.dalphas = np.sort(self.dalphas)
-		j = 0
-		while self.dalphas[j] == 0:
-			j += 1
-		dalpha = self.dalphas[j]
+		dalpha = self.get_dalpha()
+		if self.objective - self.previous_objective > 0:
+			self.dalpha = self.min_delta_prec
+			self.alpha = -self.min_delta_prec
+			self.step_alpha()
+		elif self.is_steepest:
+			self.search_alpha_SD(dalpha)
+		else:
+			self.search_alpha_CG(dalpha)
+		self.validate_bounds_alpha()
+
+
+	def validate_bounds_alpha(self):
+		lower_violated_indices = np.argwhere(
+			self.coeffs < self.lbounds)
+		if(len(lower_violated_indices) > 0):
+			min_alpha = float('inf')
+			for js in lower_violated_indices:
+				for j in js:
+					# if self.step_num == self.debug_num:
+					# 	print(j,self.prev_coeffs[j],self.coeffs[j])
+					self.alpha = ((self.prev_coeffs[j] - self.lbounds[j])/
+						self.descent_vec[j])
+					if self.alpha < min_alpha:
+						min_alpha = self.alpha
+						min_index = j
+			self.alpha = min_alpha
+			self.improvement = self.step_alpha()
+			self.coeffs[min_index] = self.lbounds[min_index]
+			# self.limp_steps = 0
+			# print("Constraining coefficient {:d}".format(j))
+			# quit()
+		if self.is_steepest and self.improvement < self.limp:
+			self.limp_steps += 1
+			if self.limp_steps > self.max_limp_steps:
+				self.is_steepest = False
+				print('Switching to conjugate gradient after step',self.step_num)
+		else:
+			self.limp_steps = 0
+
+	def search_alpha_SD(self,dalpha):
 		# if self.step_num == self.debug_num:
-		# 	self.debug_plot()
-		# 	quit()
+			# self.debug_plot()
+			# quit()
 		a_0 = 0
 		I_0 = 0
 		max_reset_iter = 8
@@ -153,7 +180,6 @@ class Grad_CG():
 		max_newt_iter = 1
 		max_dI_iter = 10
 		dI_iter = 0
-		switched_descent = self.is_steepest
 		limp = self.limp
 		uimp = self.uimp
 		mimp = self.mimp
@@ -203,36 +229,84 @@ class Grad_CG():
 				reset_iter += 1
 			else:
 				newt_iter += 1
-		lower_violated_indices = np.argwhere(
-			self.coeffs < self.lbounds)
 		self.improvement = I_0
-		if(len(lower_violated_indices) > 0):
-			min_alpha = float('inf')
-			for js in lower_violated_indices:
-				for j in js:
-					# if self.step_num == self.debug_num:
-					# 	print(j,self.prev_coeffs[j],self.coeffs[j])
-					self.alpha = ((self.prev_coeffs[j] - self.lbounds[j])/
-						self.descent_vec[j])
-					if self.alpha < min_alpha:
-						min_alpha = self.alpha
-						min_index = j
-			self.alpha = min_alpha
-			self.improvement = self.step_alpha()
-			self.coeffs[min_index] = self.lbounds[min_index]
-			# self.limp_steps = 0
-			# print("Constraining coefficient {:d}".format(j))
-			# quit()
-		if self.is_steepest and self.improvement < self.limp:
-			self.limp_steps += 1
-			if self.limp_steps > self.max_limp_steps:
-				self.is_steepest = False
-				print('Switching to conjugate gradient after step',self.step_num)
-		else:
-			self.limp_steps = 0
 
-		# if self.step_num == self.debug_num:
-		# 	quit()
+	def search_alpha_CG(self,dalpha):
+		prev_alpha = 0
+		self.alpha = 0
+		dalpha2 = dalpha*dalpha
+		prev_o = self.prev_objective
+		cur_o = self.prev_objective
+		cur_alpha = 0
+		dprint=False
+		while True:
+			obj_F = self.objective
+			dOda = (obj_F - cur_o)/dalpha
+			self.alpha = cur_alpha - dalpha
+			self.step_alpha()
+			d2Oda2 = (self.objective - 2*cur_o + obj_F)/dalpha2
+			if d2Oda2 < 0:
+				self.cg_count = self.cg_max_count
+				self.search_alpha_SD(dalpha)
+				return
+			prev_alpha = self.alpha
+			self.alpha = prev_alpha - dOda/d2Oda2
+			cur_alpha = self.alpha
+			self.step_alpha()
+			prev_o = cur_o
+			cur_o = self.objective
+			if abs(cur_o - prev_o)/prev_o < 1E-3:
+				return
+			self.alpha = cur_alpha + dalpha
+			self.step_alpha()
+
+	def get_dalpha(self):
+		dalpha = self.dalpha
+		self.alpha = dalpha
+		rel_dObj = self.step_alpha()
+		# if rel_dObj < 0:
+		# 	return 0
+		if rel_dObj < self.min_delta_prec:
+			while rel_dObj < self.min_delta_prec:
+				if dalpha > 1E5 and rel_dObj < self.min_delta_prec:
+					return self.min_delta_prec
+				prev_dalpha = dalpha
+				dalpha *= 10
+				self.alpha = dalpha
+				rel_dObj = self.step_alpha()
+			if rel_dObj > self.min_delta_prec and rel_dObj < self.max_delta_prec:
+				return dalpha
+			return self.bin_search_dalpha(prev_dalpha,dalpha,rel_dObj)
+		elif rel_dObj > self.max_delta_prec:
+			while rel_dObj > self.max_delta_prec:
+				prev_dalpha = dalpha
+				dalpha /= 10
+				if dalpha < self.min_delta_prec:
+					return self.min_delta_prec
+				self.alpha = dalpha
+				rel_dObj = self.step_alpha()
+			if rel_dObj > self.min_delta_prec and rel_dObj < self.max_delta_prec:
+				return dalpha
+			return self.bin_search_dalpha(dalpha,prev_dalpha,rel_dObj)
+		else:
+			return dalpha
+
+	def bin_search_dalpha(self,dalpha_low,dalpha_high,rel_dObj):
+		dalpha = (dalpha_low + dalpha_high) / 2
+		while rel_dObj < self.min_delta_prec or rel_dObj > self.max_delta_prec:
+			self.alpha = dalpha
+			rel_dObj = self.step_alpha()
+			if rel_dObj > self.max_delta_prec:
+				dalpha_high = dalpha
+				if dalpha_high < self.min_delta_prec:
+					return self.min_delta_prec
+			elif rel_dObj < self.min_delta_prec:
+				dalpha_low = dalpha
+			else:
+				if dalpha < self.min_delta_prec:
+					return self.min_delta_prec
+				return dalpha
+			dalpha = (dalpha_low + dalpha_high) / 2
 
 	# Used to update coefficient and objective data for output
 	# Also prints some info to the terminal during optimization
@@ -264,6 +338,7 @@ class Grad_CG():
 		np.copyto(self.coeffs,self.prev_coeffs)
 		# self.update_objective()
 		self.prev_objective = self.objective
+		self.opt_parent.prev_objective = self.objective
 		self.step_num += 1
 
 	# Performs an optimization step

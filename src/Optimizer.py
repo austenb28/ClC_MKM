@@ -2,6 +2,7 @@ import re
 import numpy as np
 import math
 import copy
+from matplotlib import pyplot as plt
 from ClC_MKM.src.Objective_handler import Objective_handler
 import ClC_MKM.src.Config as conf
 import ClC_MKM.src.Output as outp
@@ -18,6 +19,8 @@ class Optimizer():
 		self.objective_handler = Objective_handler(
 			self.mkm_configs,self.opt_config)
 		self.objective = 0
+		self.min_delta_prec = 1E-11
+		self.max_delta_prec = 1E-8
 		self.update_objective()
 		self.prev_objective = self.objective
 		self.coeffs = self.objective_handler.coeffs
@@ -25,9 +28,10 @@ class Optimizer():
 		self.gradient = np.copy(self.coeffs)
 		self.N_coeffs = len(self.coeffs)
 		self.coeff_deltas = np.copy(self.coeffs)
+		self.rel_coeff_deltas = np.full((self.N_coeffs),
+			(self.min_delta_prec + self.max_delta_prec)/2)
 		self.lbounds = self.objective_handler.mkm_systems[0].lbounds
 		self.ubounds = self.objective_handler.mkm_systems[0].ubounds
-		self.min_delta = 1E-6
 		self.sub_opt = self.init_sub_opt()
 		self.output_interval = self.opt_config['output_interval']
 		self.n_steps = self.opt_config['n_steps']
@@ -61,48 +65,147 @@ class Optimizer():
 			sub_opt = SpotPy_opt(self)
 		return sub_opt
 
-	# Updates self.coeff_deltas for numerical differentiation
-	def update_coeff_deltas(self):
+	# Updates self.gradient, self.rel_coeff_deltas, and
+	def update_gradient(self):
 		for j in range(self.N_coeffs):
-			self.coeff_deltas[j] = self.calc_coeff_delta(j)
+			self.calc_partial(j)
+			self.coeffs[j] = self.prev_coeffs[j]
+			self.validate_partial(j)
 
-	# Returns the differentiation delta for coeff j
-	def calc_coeff_delta(self,j):
-		precision = 1E-4
-		delta = abs(self.prev_coeffs[j])*precision
-		if delta < self.min_delta:
-			delta = self.min_delta
-		return delta
+	def rel_to_delta(self,rel_delta,j):
+		if self.prev_coeffs[j] == 0:
+			return rel_delta
+		return rel_delta*abs(self.prev_coeffs[j])
 
-	# Returns the partial derivative of the objective with respect
-	# to coeff j
-	# NOTE: this invalidates flow matrices, ion flows, and ratios
+	# Updates self.gradient[j], self.rel_coeff_deltas[j],
+	# and self.coeff_deltas[j]
+	# Invalidates coeffs[j]
 	def calc_partial(self,j):
-		delta = self.coeff_deltas[j]
+		# if j == 0:
+		# 	self.debug_plot_partial(j)
+		# 	quit()
+		rel_delta = self.rel_coeff_deltas[j]
+		delta = self.rel_to_delta(rel_delta,j)
 		self.coeffs[j] = self.prev_coeffs[j] + delta
 		self.update_objective()
-		delta_obj = self.objective - self.prev_objective
-		self.coeffs[j] = self.prev_coeffs[j]
-		deriv = delta_obj/delta
-		#TODO: probably remove conditional below for SciPy jac calculations
-		if ((self.prev_coeffs[j] == self.lbounds[j] and deriv > 0) or
-			self.prev_coeffs[j] == self.ubounds[j] and deriv < 0):
-			deriv = 0
-			# print("Maintaining constraint on coefficient {:d}".format(j))
-		# if self.step_num == self.debug_num and j == 3:
-		# 	print(j,self.coeffs[j],deriv)
-		# 	quit()
-		return deriv
+		dObj = self.objective - self.prev_objective
+		rel_dObj = abs(dObj)/self.prev_objective
+		if rel_dObj < self.min_delta_prec:
+			while rel_dObj < self.min_delta_prec:
+				if rel_delta > 1E5 and rel_dObj < self.min_delta_prec:
+					self.rel_coeff_deltas[j] = rel_delta
+					self.coeff_deltas[j] = delta
+					self.gradient[j] = dObj/delta
+					return
+				prev_rel_delta = rel_delta
+				rel_delta *= 10
+				delta = self.rel_to_delta(rel_delta,j)
+				self.coeffs[j] = self.prev_coeffs[j] + delta
+				self.update_objective()
+				dObj = self.objective - self.prev_objective
+				rel_dObj = abs(dObj)/self.prev_objective
+			if rel_dObj > self.min_delta_prec and rel_dObj < self.max_delta_prec:
+				self.rel_coeff_deltas[j] = rel_delta
+				self.coeff_deltas[j] = delta
+				self.gradient[j] = dObj/delta
+				return
+			self.bin_search_delta(prev_rel_delta,rel_delta,rel_dObj,j)
+			return
+		elif rel_dObj > self.max_delta_prec:
+			while rel_dObj > self.max_delta_prec:
+				prev_rel_delta = rel_delta
+				rel_delta /= 10
+				delta = self.rel_to_delta(rel_delta,j)
+				if rel_delta < self.min_delta_prec:
+					self.finalize_rel_delta(self.min_delta_prec,j)
+					return
+				self.coeffs[j] = self.prev_coeffs[j] + delta
+				self.update_objective()
+				dObj = self.objective - self.prev_objective
+				rel_dObj = abs(dObj)/self.prev_objective
+			if rel_dObj > self.min_delta_prec and rel_dObj < self.max_delta_prec:
+				self.rel_coeff_deltas[j] = rel_delta
+				self.coeff_deltas[j] = delta
+				self.gradient[j] = dObj/delta
+				return
+			self.bin_search_delta(rel_delta,prev_rel_delta,rel_dObj,j)
+			return
+		else:
+			self.rel_coeff_deltas[j] = rel_delta
+			self.coeff_deltas[j] = delta
+			self.gradient[j] = dObj/delta
+			return
 
-	# Updates self.gradient to contain the objective's gradient
-	#TODO: potentially update such that explicit relative
-	# objective deltas are achieved
-	def update_gradient(self):
-		self.prev_objective = self.objective
-		self.update_coeff_deltas()
-		for j in range(self.N_coeffs):
-			self.gradient[j] = self.calc_partial(j)
-		self.objective = self.prev_objective
+	def finalize_rel_delta(self,rel_delta,j):
+		self.rel_coeff_deltas[j] = rel_delta
+		delta = self.rel_to_delta(rel_delta,j)
+		self.coeff_deltas[j] = delta
+		self.coeffs[j] = self.prev_coeffs[j] + delta
+		self.update_objective()
+		dObj = self.objective - self.prev_objective
+		self.gradient[j] = dObj/delta
+
+	def bin_search_delta(self,rel_delta_low,rel_delta_high,rel_dObj,j):
+		rel_delta = (rel_delta_low + rel_delta_high) / 2
+		delta = self.rel_to_delta(rel_delta,j)
+		while rel_dObj < self.min_delta_prec or rel_dObj > self.max_delta_prec:
+			self.coeffs[j] = self.prev_coeffs[j] + delta
+			self.update_objective()
+			dObj = self.objective - self.prev_objective
+			rel_dObj = abs(dObj)/self.prev_objective
+			if rel_dObj > self.max_delta_prec:
+				rel_delta_high = rel_delta
+				if rel_delta_high < self.min_delta_prec:
+					self.finalize_rel_delta(self.min_delta_prec,j)
+					return
+			elif rel_dObj < self.min_delta_prec:
+				rel_delta_low = rel_delta
+			else:
+				if rel_delta < self.min_delta_prec:
+					self.finalize_rel_delta(self.min_delta_prec,j)
+					return
+				self.rel_coeff_deltas[j] = rel_delta
+				self.coeff_deltas[j] = delta
+				self.gradient[j] = dObj/delta
+				return
+			rel_delta = (rel_delta_low + rel_delta_high) / 2
+			delta = self.rel_to_delta(rel_delta,j)
+
+	def debug_plot_partial(self,j):
+		N = 30
+		d0 = 1E-15
+		x = np.zeros((N))
+		y1 = np.copy(x)
+		y2 = np.copy(x)
+		for k in range(N):
+			x[k] = d0 * 10 ** k
+			delta = x[k]*abs(self.prev_coeffs[j])
+			self.coeffs[j] = self.prev_coeffs[j] + delta
+			self.update_objective()
+			dObj = self.objective - self.prev_objective
+			y1[k] = abs(dObj)/self.prev_objective
+			y2[k] = abs(dObj)/delta
+		plt.plot(x,y1)
+		plt.yscale('log')
+		plt.xscale('log')
+		plt.ylabel('rel_d_obj')
+		plt.xlabel('rel_d_coeff {:d}'.format(j))
+		plt.plot()
+		plt.figure()
+		plt.plot(x,y2)
+		plt.yscale('log')
+		plt.xscale('log')
+		plt.xlabel('rel_d_coeff {:d}'.format(j))
+		plt.ylabel('|dO/dc|')
+		plt.show()
+
+	# Validates gradient entry j againsts bounds
+	# NOTE: this invalidates flow matrices, ion flows, and ratios
+	def validate_partial(self,j):
+		#TODO: maybe remove conditional below for SciPy jac calculations
+		if ((self.prev_coeffs[j] == self.lbounds[j] and self.gradient[j] > 0) or
+			self.prev_coeffs[j] == self.ubounds[j] and self.gradient[j] < 0):
+			self.gradient[j] = 0
 
 	# Updates self.objective using self.coeffs
 	def update_objective(self):

@@ -42,18 +42,21 @@ class Objective_handler():
 		self.reverse_inds = np.copy(self.forward_inds)
 		self.reverse_inds[:,0] = self.forward_inds[:,1]
 		self.reverse_inds[:,1] = self.forward_inds[:,0]
+		print('No flow constraints: {:d}'.format(
+			self.forward_inds.shape[0]))
 
 	# Returns the summed square residual for the no flow sytems,
 	# which uses the minimum number of independent flow 
-	# constraints to establish microscopic reversability
+	# constraints to establish microscopic reversability.
+	# Only using bio since opposite should be identical with 
+	# zero gradient.
 	def no_flow_sqresidual(self):
 		sq_res = 0
 		for j in self.no_flow_sys:
-			for k in range(self.mkm_systems[j].N_orient):
-				flow_mat = self.mkm_systems[j].flow_mats[k]
-				vals = np.take(flow_mat,self.forward_inds)
-				vals -= np.take(flow_mat,self.reverse_inds)
-				sq_res += np.sum(vals*vals)
+			flow_mat = self.mkm_systems[j].flow_mats[0]
+			vals = np.take(flow_mat,self.forward_inds)
+			vals -= np.take(flow_mat,self.reverse_inds)
+			sq_res += np.sum(vals*vals)
 		return sq_res
 
 
