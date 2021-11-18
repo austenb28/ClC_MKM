@@ -82,14 +82,22 @@ class MKM_sys():
 
 	# Writes self.coeffs to filename
 	def export_coeffs(self,filename):
-		bufflist = ['"cl0_-00","cl1_-00","cl0_00+","cl1_00+","cl0_+00","cl1_+00","cl0_00-","cl1_00-","cl0_+01","cl1_+01","cl0_10+","cl1_10+","cl0_-01","cl1_-01","cl0_10-","cl1_10-","cl0_01+","cl1_01+","cl0_+10","cl1_+10","cl0_-10","cl1_-10","cl0_01-","cl1_01-","cl0_+11","cl1_+11","cl0_-11","cl1_-11","cl0_11+","cl1_11+","cl0_11-","cl1_11-","cl0_0+-","cl1_0+-","cl0_0-+","cl1_0-+","cl1_+-0","cl1_+-1","cl1_-+0","cl1_-+1","cl0_1+-","cl1_1+-","cl0_1-+","cl1_1-+","203p0","203p1","203d0","203d1","148d00","148d01","148p00","148p01","148d10","148d11","148p10","148p11","h+-00_","h-+00_","h+-01_","h-+01_","h+-10_","h-+10_","h+-11_","h-+11_","u1__0_","d1__0_","u0__0_","d0__0_","u1__1_"\n']
+		bufflist = ['"'+'","'.join(self.idents)+'"\n']
 		for coeff in self.coeffs:
-			if coeff == 0:
-				exponent = 0
-			else:
-				exponent = int(math.log(abs(coeff),10))
-			bufflist.append('{:.15f}E{:d}\t'.format(
-				coeff / (10**exponent),exponent
+			bufflist.append('{:.15e}'.format(
+				coeff
+			))
+			bufflist.append(',')
+		bufflist[-1] = '\n'
+		for bound in self.lbounds:
+			bufflist.append('{:.15e}'.format(
+				bound
+			))
+			bufflist.append(',')
+		bufflist[-1] = '\n'
+		for bound in self.ubounds:
+			bufflist.append('{:.15e}'.format(
+				bound
 			))
 			bufflist.append(',')
 		bufflist[-1] = '\n'

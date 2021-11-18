@@ -129,7 +129,7 @@ class Grad_CG():
 	# TODO: potentially improve dalpha determination
 	def search_alpha(self):
 		dalpha = self.get_dalpha()
-		if self.objective - self.previous_objective > 0:
+		if self.objective - self.prev_objective > 0:
 			self.dalpha = self.min_delta_prec
 			self.alpha = -self.min_delta_prec
 			self.step_alpha()
