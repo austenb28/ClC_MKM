@@ -215,8 +215,8 @@ class Optimizer():
 	def save_dat(self):
 		header = ('Step\t' + '\t'.join( 
 			self.objective_handler.mkm_systems[0].idents) +
-			' Objective')
-		np.savetxt(self.opt_dat_file,self.opt_dat,fmt='%.6e',
+			'\tObjective')
+		np.savetxt(self.opt_dat_file,self.opt_dat,fmt='%.9e',
 			header=header,comments='',delimiter='\t')
 		self.objective_handler.mkm_systems[0].export_coeffs(
 			'out_coeffs.csv')
