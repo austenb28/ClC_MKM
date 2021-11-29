@@ -52,13 +52,19 @@ ClC\_MKM requires the following:
 \section{Installation}
 Download the top directory \parameters{ClC\_MKM} to a directory that will store the module. Update your \parameters{\$PYTHONPATH} environment variable to include the storage directory if it is not already included. Update your \parameters{\$PATH} environment variable to include \parameters{ClC\_MKM/bin}. For example, on a Unix based system using a bash shell, if the storage directory is \parameters{\$HOME/modules}, then adding \\
 
+
 \parameters{export PYTHONPATH=\$PYTHONPATH:"\$HOME/modules"}
 
 \parameters{export PATH=\$PATH:"\$HOME/modules/ClC\_MKM/bin"}\\
 
 to \parameters{\$HOME/.bashrc} properly installs ClC\_MKM.
 
-\clearpage
+\subsection{Troubleshooting}
+\begin{itemize}
+\item \textbf{Installing on recently updated macOS?} You're probably running Zsh instead of bash, so you'll need to modify \parameters{\$HOME/.zshrc} instead of \parameters{\$HOME/.bashrc} with the export lines above.
+\item \textbf{Getting a \parameters{"No module named 'ClC\_MKM'"} error?} Your installation folder must be named \parameters{"ClC\_MKM"}.  If you downloaded as zip from GitHub, you probably need to rename from \parameters{"ClC\_MKM-main"}.
+\end{itemize}
+
 \section{Executables}
 \label{sec:exec}
 
