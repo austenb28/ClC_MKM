@@ -48,7 +48,7 @@ class spot_setup():
 		if self.count % self.opt_parent.output_interval == 0:
 			self.opt_parent.opt_dat[self.opt_parent.out_count,0] = self.count
 			self.opt_parent.opt_dat[self.opt_parent.out_count,1:-1] = coeffs
-			self.opt_parent.opt_dat[self.opt_parent.out_count,-1] = objfuncs
+			self.opt_parent.opt_dat[self.opt_parent.out_count,-1] = -objfuncs
 			self.opt_parent.out_count += 1
 		self.count += 1
 
