@@ -245,7 +245,7 @@ class Grad_CG():
 			self.alpha = cur_alpha - dalpha
 			self.step_alpha()
 			d2Oda2 = (self.objective - 2*cur_o + obj_F)/dalpha2
-			if d2Oda2 < 0:
+			if d2Oda2 < self.min_delta_prec:
 				self.cg_count = self.cg_max_count
 				self.search_alpha_SD(dalpha)
 				return
