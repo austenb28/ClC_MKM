@@ -2,6 +2,11 @@ import numpy as np
 import scipy.optimize as sopt
 from ClC_MKM.src.Config import read_config
 import os.path
+import sys
+
+# Exception used to terminate optimizations
+class FinishedOpt(Exception):
+	pass
 
 # Used as the parent optimizer's sub_opt class for SciPy
 class SciPy_opt():
@@ -21,8 +26,10 @@ class SciPy_opt():
 		if 'global_options_file' in self.opt_config:
 			self.global_options = self.get_options(
 				self.opt_config['global_options_file'])
+		self.n_steps = self.opt_config['n_steps']
 		self.count = 1
 		self.objective = 0
+		self.res = None
 
 	# Returns the objective using self.coeffs
 	def evaluate(self):
@@ -57,7 +64,7 @@ class SciPy_opt():
 		return self.opt_parent.gradient
 
 	# Used to update coefficient and objective data for output
-	def callback(self,xk,fun_val=0,status=True):
+	def callback(self,xk,f=None,fun_val=0,status=True,convergence=None):
 		if self.count % self.opt_parent.output_interval == 0:
 			self.opt_parent.opt_dat[self.opt_parent.out_count,0] = self.count
 			self.opt_parent.opt_dat[self.opt_parent.out_count,1:-1] = xk
@@ -65,18 +72,22 @@ class SciPy_opt():
 				self.objective)
 			self.opt_parent.out_count += 1
 		self.count += 1
+		if self.count == self.n_steps + 1:
+			raise FinishedOpt
 
 	# Runs the SciPy optimization
 	def run(self):
 		if self.global_method is None:
-			self.local_options['maxiter'] = self.opt_parent.n_steps + 1
-			self.res = sopt.minimize(
-				self.fun,self.init_coeffs,
-				method=self.local_method,
-				jac=self.jac,
-				bounds=self.bounds,
-				callback=self.callback,
-				options=self.local_options)
+			try:
+				self.res = sopt.minimize(
+					self.fun,self.init_coeffs,
+					method=self.local_method,
+					jac=self.jac,
+					bounds=self.bounds,
+					callback=self.callback,
+					options=self.local_options)
+			except (FinishedOpt):
+				pass
 		else:
 			opt_fun = getattr(sopt,self.global_method)
 			kwargs = dict()
@@ -86,14 +97,12 @@ class SciPy_opt():
 			if self.global_method == 'basinhopping':
 				basinbounds = BasinBounds(self.bounds)
 				kwargs['accept_test'] = basinbounds
-				kwargs['niter'] = self.opt_parent.n_steps - 1
+			elif (self.global_method == 'shgo' or 
+				self.global_method == 'dual_annealing'):
+				kwargs['bounds'] = list(zip(self.opt_parent.lbounds,
+					self.opt_parent.ubounds))
 			else:
 				kwargs['bounds'] = self.bounds
-			if (self.global_method == 'shgo'):
-				kwargs['options'] = {'maxiter':self.opt_parent.n_steps + 1}
-			elif (self.global_method == 'differential_evolution' or
-				self.global_method == 'dual_annealing'):
-				kwargs['maxiter'] = self.opt_parent.n_steps + 1
 			if (self.global_method =='basinhopping' or
 				self.global_method == 'differential_evolution' or
 				self.global_method == 'dual_annealing'):
@@ -106,13 +115,16 @@ class SciPy_opt():
 				else:
 					local_str = 'minimizer_kwargs'
 				kwargs[local_str] = dict()
+				kwargs[local_str]['bounds'] = self.bounds
 				kwargs[local_str]['method'] = self.local_method
 				kwargs[local_str]['jac'] = self.jac
 				kwargs[local_str]['options'] = self.local_options
-				# print(kwargs[local_str])
-				# quit()
-			self.res = opt_fun(**kwargs)
-		print(self.res)
+			try:
+				self.res = opt_fun(**kwargs)
+			except (FinishedOpt):
+				pass
+		if not self.res is None:
+			print(self.res)
 
 # Used to define bounds for the 'basinhopping' global optimization
 # method 
