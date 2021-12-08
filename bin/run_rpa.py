@@ -57,7 +57,7 @@ def oriented_decomp(j,mkm_sys):
 	dat['K_desc'] = K_desc
 	dat['idents'] = mkm_sys.idents
 	dat['coeffs_dict'] = mkm_sys.coeffs_dict
-	F = mkm_sys.flow_mats[0]
+	F = mkm_sys.flow_mats[j]
 	dat['F'] = F
 	nstep = 500
 	run_post = 10
