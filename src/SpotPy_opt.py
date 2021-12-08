@@ -10,6 +10,8 @@ class spot_setup():
 		self.params = self.gen_params()
 		self.objective = 0
 		self.count = 1
+		self.min_obj = float('inf')
+		self.min_coeffs = np.copy(opt_parent.coeffs)
 
 	# Transforms coeffs into SpotPy params
 	def gen_params(self):
@@ -45,6 +47,9 @@ class spot_setup():
 
 	# Used to update coefficient and objective data for output
 	def save(self,objfuncs,coeffs,sims,chains):
+		if -objfuncs < self.min_obj:
+			self.min_coeffs = np.copy(coeffs)
+			self.min_obj = -objfuncs
 		if self.count % self.opt_parent.output_interval == 0:
 			self.opt_parent.opt_dat[self.opt_parent.out_count,0] = self.count
 			self.opt_parent.opt_dat[self.opt_parent.out_count,1:-1] = coeffs
@@ -65,5 +70,4 @@ class SpotPy_opt():
 		sampler = sp_alg(my_spot_setup,dbformat='custom',
 			save_sim=False)
 		sampler.sample(self.opt_config['n_steps'])
-
-
+		np.copyto(self.opt_parent.coeffs,my_spot_setup.min_coeffs)
