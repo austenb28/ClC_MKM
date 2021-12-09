@@ -29,6 +29,8 @@ class SciPy_opt():
 		self.n_steps = self.opt_config['n_steps']
 		self.count = 1
 		self.objective = 0
+		self.min_obj = float('inf')
+		self.min_coeffs = np.copy(self.coeffs)
 		self.res = None
 
 	# Returns the objective using self.coeffs
@@ -64,7 +66,11 @@ class SciPy_opt():
 		return self.opt_parent.gradient
 
 	# Used to update coefficient and objective data for output
-	def callback(self,xk,f=None,fun_val=0,status=True,convergence=None):
+	def callback(self,xk,accept=None,context=None,f=None,fun_val=0,status=True,convergence=None):
+		if not (self.global_method is None):
+			if self.objective < self.min_obj:
+				self.min_obj = self.objective
+				np.copyto(self.min_coeffs,xk)
 		if self.count % self.opt_parent.output_interval == 0:
 			self.opt_parent.opt_dat[self.opt_parent.out_count,0] = self.count
 			self.opt_parent.opt_dat[self.opt_parent.out_count,1:-1] = xk
@@ -123,6 +129,7 @@ class SciPy_opt():
 				self.res = opt_fun(**kwargs)
 			except (FinishedOpt):
 				pass
+			np.copyto(self.coeffs,self.min_coeffs)
 		if not self.res is None:
 			print(self.res)
 

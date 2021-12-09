@@ -48,7 +48,7 @@ class spot_setup():
 	# Used to update coefficient and objective data for output
 	def save(self,objfuncs,coeffs,sims,chains):
 		if -objfuncs < self.min_obj:
-			self.min_coeffs = np.copy(coeffs)
+			np.copyto(self.min_coeffs,coeffs)
 			self.min_obj = -objfuncs
 		if self.count % self.opt_parent.output_interval == 0:
 			self.opt_parent.opt_dat[self.opt_parent.out_count,0] = self.count
